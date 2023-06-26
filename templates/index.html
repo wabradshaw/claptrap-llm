@@ -12,7 +12,6 @@
   <img src="{{ url_for('static', filename='dog.png') }}" class="icon" />
   <h3>Name my pet</h3>
   <form action="/" method="post">
-    <input type="text" name="animal" placeholder="Enter an animal" required />
     <input type="submit" value="Generate names" />
   </form>
   {% if result %}
