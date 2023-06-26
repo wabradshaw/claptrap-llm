@@ -1,13 +1,14 @@
 import os
 
+import re
 import openai
 from flask import Flask, redirect, render_template, request, url_for
 
 JOKE_SYSTEM = """You are a comedian that tells jokes in the following format:
 
-<A, B, C, D, E>
+<A,B,C,D>
 S
-E!
+D!
 
 Where each symbol has the following meaning:
 A -> A random word or phrase of at least 8 letters.
@@ -18,25 +19,29 @@ S -> The setup. It should describe a combination of A and C.
 
 Here are some examples:
 
-<nightmare, night, fight, fightmare>
+<nightmare,night,fight,fightmare>
 What do you call a cross between a bad dream and a battle?
 A fightmare!
 
-<Cupcake, cup, pup, pupcake>
+<cupcake,cup,pup,pupcake>
 What dog is made in a bakery?
 A pupcake!
 
-<Guitar, tar, star, guistar>
+<guitar,tar,star,guistar>
 What do you call a musical instrument that shines like a celestial body?
 A guistar!
 
-<Wonderful, won, run, runderful>
+<wonderful,won,run,runderful>
 What do you call an amazing race?
-Runderful!"""
+Runderful!
+
+Please respond in this exact format without any preamble."""
 
 GENERIC_JOKE_PROMPT = "Tell a joke"
-
 MODEL = "gpt-3.5-turbo"
+
+JOKE_PATTERN = re.compile("^.*<\w+,\w+,\w+,\w+>\n.+\?\n.+$")
+LOGIC_PATTERN = re.compile("<\w+,\w+,\w+,\w+>$")
 
 app = Flask(__name__)
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -50,13 +55,22 @@ def index():
                 {"role": "system", "content": JOKE_SYSTEM},
                 {"role": "user", "content": GENERIC_JOKE_PROMPT}
             ],            
-            temperature=1.5
+            temperature=0.8
         )
         joke = response.choices[0].message.content
+        
         return redirect(url_for("index", result=joke))
 
     result = request.args.get("result")
-    return render_template("index.html", result=result)
+
+    if not result:
+        return render_template("index.html")
+    elif JOKE_PATTERN.match(result):
+        components = result.split('\n')
+        logic = LOGIC_PATTERN.findall(components[0])[0]
+        return render_template("index.html", logic=logic, setup=components[1], punchline=components[2])
+    else:
+        return render_template("index.html", error=result)
 
 
 
