@@ -10,20 +10,22 @@
 
 <body>
   <h3>Claptrap 2</h3>
-  {% if setup and punchline and logic %}
+  {% if setup and punchline %}
   <div class="setup">{{ setup }}</div>
   <div class="punchline">{{ punchline }}</div>
-  <form action="/" method="post">
+  <form action="/jokes" method="get">
     <input type="submit" value="Generate another" />
   </form>
-  <div class="logic">{{ logic }}</div>
+  <div class="origin">{{ origin }}</div>
+  <div class="component">{{ component }}</div>
+  <div class="replacement">{{ replacement }}</div>
   {% elif error %}
-  <form action="/" method="post">
-    <input type="submit" value="Try again" />
-    <div class="setup">{{ error }}</div>
+  <div class="error">{{ error }}</div>
+  <form action="/jokes" method="get">    
+    <input type="submit" value="Try again" />    
   </form>
   {% else %}
-  <form action="/" method="post">
+  <form action="/jokes" method="get">
     <input type="submit" value="Generate a joke" />
   </form>
   {% endif %}  
