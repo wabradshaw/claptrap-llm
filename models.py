@@ -34,9 +34,6 @@ E.g. [cabbages, wonderful, believeable, completion, magnitude, participant, refe
         content = response.choices[0].message.content
         matches = _LONG_WORD_PATTERN.findall(content)
         
-        print(f"0.1.1: {content}")
-        print(f"0.1.2: {matches[0]}")
-
         if len(matches) == 1:
             return matches[0].split(", ")
         else:
