@@ -1,5 +1,6 @@
 import math
 import random
+import logging
 
 from PyDictionary import PyDictionary
 
@@ -33,25 +34,41 @@ class Services:
         options = self._models.get_long_words_list()
         random.shuffle(options)
 
+        logging.debug(f"Possible joke words: {options}")
+
         for candidate in options:            
             try:
                 return self.tell_joke_about(candidate)
             except (ModelResponseFormatError, NoJokeFoundError):
                 # We'll try again so long as there's another possible option. 
                 # Other exceptions are raised as normal.
-                print(f"No results for {candidate}")
+                logging.info(f"Could not think of a joke for {candidate}")
                 pass
 
         raise NoJokeFoundError()
                 
     def tell_joke_about(self, phrase):
+        logging.info(f"Trying to create a joke about [{phrase}]")
+
         candidate_words = self._get_constituent_words(phrase)
 
+        if not candidate_words:
+            logging.info(f"The phrase [{phrase}] could not be broken up")
+            raise NoJokeFoundError()
+        
+        logging.debug(f"Possible candidates for [{phrase}]: [{candidate_words}]")
         for candidate in candidate_words:
+            logging.debug(f"Trying to create a joke about the [{candidate}] in [{phrase}]")
 
             replacement_substrings = self._models.get_words_that_sound_like(word=candidate,origin=phrase)
+            random.shuffle(replacement_substrings)
 
-            for candidate_replacement in replacement_substrings:
+            if not replacement_substrings:
+                logging.info(f"No replacements found for the [{candidate}] in [{phrase}]")
+            else:
+                candidate_replacement = replacement_substrings[0]
+                logging.debug(f"Trying to replace the [{candidate}] in [{phrase}] with [{candidate_replacement}]")
+
                 substitution = self._get_substitution(origin=phrase, 
                                 component=candidate, 
                                 replacement=candidate_replacement)
@@ -59,6 +76,8 @@ class Services:
                 (setup, punchline) = self._models.joke(punchline=substitution,
                                                        origin=phrase, 
                                                        replacement=candidate_replacement)
+
+                logging.debug(f"Joke for [{phrase}] returned as [{punchline}]")
 
                 response = Joke(setup=setup,
                                 punchline=punchline,
@@ -68,6 +87,7 @@ class Services:
                                 )
                 return response
     
+        logging.info(f"No replacements found for any subsection of [{phrase}]")
         raise NoJokeFoundError()
     
     def _get_constituent_words(self, origin):
