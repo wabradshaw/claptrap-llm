@@ -4,6 +4,7 @@ import logging
 from flask import Flask, redirect, render_template, request, url_for
 
 from services import Services
+from errors import PermanentOpenAIError, RetriableOpenAIError, NoJokeFoundError
 
 app = Flask(__name__)
 services = Services()
@@ -25,8 +26,18 @@ def index():
                                     origin=joke.origin, 
                                     component=joke.component, 
                                     replacement=joke.replacement))        
+        except PermanentOpenAIError as e:
+            return render_template("index.html", 
+                                   error="I'm sorry, we can't generate jokes at the moment.") 
+        except RetriableOpenAIError as e:
+            return render_template("index.html", 
+                                   error="I'm sorry, we couldn't generate a joke. Please try again.") 
+        except NoJokeFoundError as e:
+            return render_template("index.html", 
+                                   error="I'm sorry, we couldn't think of a joke. Let's try again.") 
         except Exception as e:
-            return render_template("index.html", error=str(e)) 
+            logging.CRITICAL("UNHANDLED ERROR!")
+            return render_template("index.html", error="ERROR") 
         
     else:
         logging.info(f"Displaying joke - [{punchline}]")

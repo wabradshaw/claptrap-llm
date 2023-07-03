@@ -1,9 +1,10 @@
 import os
 import re
+import logging
 
 import openai
 
-from errors import ModelResponseFormatError
+from errors import ModelResponseFormatError, RetriableOpenAIError, PermanentOpenAIError
 
 # ChatCompletions
 _GPT_3_5 = "gpt-3.5-turbo" 
@@ -18,20 +19,50 @@ class Models:
     def __init__(self):
         openai.api_key = os.getenv("OPENAI_API_KEY")
 
+    def _completion(self, system, user, model=_GPT_3_5, temperature=1.0):
+        messages = [{"role": "system", "content": system}]
+        if user is not list: user = [user]
+        for message in user:
+            messages.append({"role": "user", "content": message})
+
+        try:
+            response = openai.ChatCompletion.create(            
+                model=model,            
+                temperature=temperature,
+                messages=messages   
+            )
+            return response.choices[0].message.content
+        except openai.error.APIError as e:
+            logging.error("Open AI was unable to process a request")
+            raise RetriableOpenAIError(e)
+        except openai.error.Timeout as e:
+            logging.error("Open AI request took too long")
+            raise RetriableOpenAIError(e)
+        except openai.error.RateLimitError as e:
+            logging.critical("WE ARE MAKING TOO MANY REQUESTS!")
+            raise PermanentOpenAIError(e)
+        except openai.error.APIConnectionError as e:
+            logging.critical("ISSUE WITH CONNECTION SETTINGS!")
+            raise PermanentOpenAIError(e)
+        except openai.error.InvalidRequestError as e:
+            logging.critical("ISSUE WITH REQUEST SETUP!")
+            raise PermanentOpenAIError(e)
+        except openai.error.AuthenticationError as e:
+            logging.critical("ISSUE WITH API KEY!")
+            raise PermanentOpenAIError(e)
+        except openai.error.ServiceUnavailableError as e:
+            logging.error("Open AI could not handle the request")
+            raise RetriableOpenAIError(e)
+
     def get_long_words_list(self):
         _prompt = """
 You are a random word generator. You generate comma separated list of words with at least 8 characters in each. 
 E.g. [cabbages, wonderful, believeable, completion, magnitude, participant, referenced, instructions, unavailable, tempests]"""
         
-        response = openai.ChatCompletion.create(            
-            model=_GPT_3_5,            
-            temperature=1.0,
-            messages=[
-                {"role": "system", "content": _prompt},
-                {"role": "user", "content": "Generate a list with 10 words. Do not say anything other than the list."}
-            ]            
+        content = self._completion(
+            system=_prompt,
+            user="Generate a list with 10 words. Do not say anything other than the list."
         )
-        content = response.choices[0].message.content
         matches = _LONG_WORD_PATTERN.findall(content)
         
         if len(matches) == 1:
@@ -51,15 +82,10 @@ Examples:
 'read' from 'bread' -> [red, led, sled, spread, bred, dread]
 'read' from 'reading' -> [reed, feed, freed, reek, reap, lead, seed]"""        
 
-        response = openai.ChatCompletion.create(            
-            model=_GPT_3_5,            
-            temperature=1.0,
-            messages=[
-                {"role": "system", "content": _prompt},
-                {"role": "user", "content": f"'{word}' from '{origin}'"}
-            ]            
+        content = self._completion(
+            system=_prompt,
+            user=f"'{word}' from '{origin}'"
         )
-        content = response.choices[0].message.content
         matches = _SOUND_ALIKE_PATTERN.findall(content)
 
         if len(matches) == 1:
@@ -89,15 +115,10 @@ P: pup-cake, O: cupcake, R: pup ->
 SETUP:What dog is made in a bakery?
 PUNCHLINE:A pup-cake!"""        
 
-        response = openai.ChatCompletion.create(            
-            model=_GPT_3_5,            
-            temperature=1.2,
-            messages=[
-                {"role": "system", "content": _prompt},
-                {"role": "user", "content": f"P:'{punchline}', O:'{origin}', R:'{replacement}'"}
-            ]            
+        content = self._completion(
+            system=_prompt,
+            user=f"P:'{punchline}', O:'{origin}', R:'{replacement}'"
         )
-        content = response.choices[0].message.content
         setup_matches = _SETUP_PATTERN.findall(content)
         punchline_matches = _PUNCHLINE_PATTERN.findall(content)
 

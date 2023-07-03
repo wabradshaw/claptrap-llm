@@ -14,3 +14,9 @@ class ModelResponseFormatError(Exception):
         
 class NoJokeFoundError(Exception):
     """Error raised when the system could not find any jokes that continue from the current point."""
+
+class RetriableOpenAIError(Exception):
+    """Error raised when OpenAI is unable to generate a response. We may be able to get a response in the next request."""
+
+class PermanentOpenAIError(Exception):
+    """Error raised when OpenAI is unable to generate a response. No further requests will help."""
