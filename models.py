@@ -10,7 +10,6 @@ from errors import ModelResponseFormatError, RetriableOpenAIError, PermanentOpen
 _GPT_3_5 = "gpt-3.5-turbo" 
 
 # Patterns
-_LONG_WORD_PATTERN = re.compile("(?:\w{8,}, ){9}\w{8,}")
 _SOUND_ALIKE_PATTERN = re.compile("(?:\w+, )+\w+")
 _SETUP_PATTERN = re.compile("(?<=SETUP:)(.*)\n?(?=PUNCHLINE:)")
 _PUNCHLINE_PATTERN = re.compile("(?<=PUNCHLINE:)(.*)")
@@ -53,22 +52,6 @@ class Models:
         except openai.error.ServiceUnavailableError as e:
             logging.error("Open AI could not handle the request")
             raise RetriableOpenAIError(e)
-
-    def get_long_words_list(self):
-        _prompt = """
-You are a random word generator. You generate comma separated list of words with at least 8 characters in each. 
-E.g. [cabbages, wonderful, believeable, completion, magnitude, participant, referenced, instructions, unavailable, tempests]"""
-        
-        content = self._completion(
-            system=_prompt,
-            user="Generate a list with 10 words. Do not say anything other than the list."
-        )
-        matches = _LONG_WORD_PATTERN.findall(content)
-        
-        if len(matches) == 1:
-            return matches[0].split(", ")
-        else:
-            raise ModelResponseFormatError("LongWordsList", content)
     
     def get_words_that_sound_like(self, word, origin):
         _prompt = """

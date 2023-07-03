@@ -2,8 +2,6 @@ import math
 import random
 import logging
 
-from PyDictionary import PyDictionary
-
 from models import Models
 from errors import ModelResponseFormatError, NoJokeFoundError
 
@@ -20,19 +18,26 @@ class Services:
     # Banned items are removed from the joke pool to avoid common poor pronunciation
     # Common items are removed to avoid recreating actual words
     _BANNED_PREFIXES = []
-    _BANNED_SUFFIXES = ["ion"]    
+    _BANNED_SUFFIXES = ["ion","ing"]    
     _COMMON_PREFIXES = ["un"]
     _COMMON_SUFFIXES = ["acy","al","dom","er","or","ism","ist","ity","ment",
                         "ing","s","es","ed","or"]
 
     def __init__(self):
-        self._dictionary = PyDictionary()
         self._models = Models()
+        self._short_words = set(self._load_words('res/short'))
+        self._long_words = self._load_words('res/long')
+
+    def _load_words(self, path):
+        with open(path, 'r') as file:
+            file_content = file.read()
+
+        words = file_content.split('\n')
+        words = [word.strip() for word in words]
+        return words
 
     def tell_joke(self):
-        #TODO - Replace with internal candidate word list
-        options = self._models.get_long_words_list()
-        random.shuffle(options)
+        options = random.choices(population=self._long_words,k=10)
 
         logging.debug(f"Possible joke words: {options}")
 
@@ -105,9 +110,8 @@ class Services:
             candidate_affixes = set(candidate_prefixes)
             candidate_affixes.update(candidate_suffixes)
 
-            #TODO - Replace with an internal word list to avoid processing time and remove obscure words
             candidate_words = [word for word in candidate_affixes 
-                               if self._dictionary.meaning(word, True)]            
+                               if word in self._short_words]
             
             return candidate_words
     
