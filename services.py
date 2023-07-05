@@ -80,6 +80,19 @@ class Services:
     def _tell_joke_about_replacement(self, replacement):
         logging.info(f"Trying to create a joke replacing [{replacement}]")
 
+        candidate_words = self._models.get_words_that_sound_like(word=replacement)
+
+        if not candidate_words:
+            logging.info(f"The replacement [{replacement}] does not sound like anything")
+            raise NoJokeFoundError()
+        
+        logging.debug(f"Possible nucleii for [{replacement}]: [{candidate_words}]")
+        for candidate in candidate_words:
+            #TODO - Make this a joke
+            return self._put_joke_together(origin=candidate, 
+                                           candidate=candidate,
+                                           replacement=replacement,
+                                           punchline=replacement)
         raise NoJokeFoundError()
     
     def _tell_joke_about_phrase(self, phrase):
@@ -95,7 +108,7 @@ class Services:
         for candidate in candidate_words:
             logging.debug(f"Trying to create a joke about the [{candidate}] in [{phrase}]")
 
-            replacement_substrings = self._models.get_words_that_sound_like(word=candidate,origin=phrase)
+            replacement_substrings = self._models.get_words_that_sound_like_component(word=candidate,origin=phrase)
             random.shuffle(replacement_substrings)
 
             if not replacement_substrings:
@@ -108,22 +121,28 @@ class Services:
                                 component=candidate, 
                                 replacement=candidate_replacement)
 
-                (setup, punchline) = self._models.joke(punchline=substitution,
-                                                       origin=phrase, 
-                                                       replacement=candidate_replacement)
-
-                logging.debug(f"Joke for [{phrase}] returned as [{punchline}]")
-
-                response = Joke(setup=setup,
-                                punchline=punchline,
-                                origin=phrase, 
-                                component=candidate, 
-                                replacement=candidate_replacement
-                                )
-                return response
+                return self._put_joke_together(origin=phrase, 
+                                               candidate=candidate, 
+                                               replacement=candidate_replacement, 
+                                               punchline=substitution)
     
         logging.info(f"No replacements found for any subsection of [{phrase}]")
         raise NoJokeFoundError()
+
+    def _put_joke_together(self, origin, candidate, replacement, punchline):
+        (setup, punchline) = self._models.joke(punchline=punchline,
+                                               origin=origin,
+                                               replacement=replacement)
+
+        logging.debug(f"Joke for [{origin}] returned as [{punchline}]")
+
+        response = Joke(setup=setup,
+                        punchline=punchline,
+                        origin=origin, 
+                        component=candidate, 
+                        replacement=replacement
+                        )
+        return response
     
     def _get_constituent_words(self, origin):
             # Max sub-word length is either 6 characters, 

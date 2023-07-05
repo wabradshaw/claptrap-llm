@@ -53,7 +53,27 @@ class Models:
             logging.error("Open AI could not handle the request")
             raise RetriableOpenAIError(e)
     
-    def get_words_that_sound_like(self, word, origin):
+    def get_words_that_sound_like(self, word):
+        _prompt = """
+You are a poet's assistant. You generate options for words that either rhyme with or sound like other words.
+Return a comma separated list of words. Do not say anything other than the list.
+
+Examples: 
+'wave' -> [knave, rave, waive, gave, save, wove]
+'head' -> [red, led, sled, spread, bred, dread]"""        
+
+        content = self._completion(
+            system=_prompt,
+            user=f"'{word}'"
+        )
+        matches = _SOUND_ALIKE_PATTERN.findall(content)
+
+        if len(matches) == 1:
+            return matches[0].split(", ")
+        else:
+            raise ModelResponseFormatError("SoundsLike", content)
+        
+    def get_words_that_sound_like_component(self, word, origin):
         _prompt = """
 You are a poet's assistant. You generate options for words that either rhyme with or sound like other words.
 Users will supply a candidate word, and a larger word or phrase containing that word. 
@@ -74,7 +94,7 @@ Examples:
         if len(matches) == 1:
             return matches[0].split(", ")
         else:
-            raise ModelResponseFormatError("SoundsLike", content)
+            raise ModelResponseFormatError("SoundsLikeComponent", content)
 
     def joke(self, punchline, origin, replacement):
         _prompt = """
