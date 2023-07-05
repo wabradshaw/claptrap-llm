@@ -12,14 +12,18 @@ _log_level = eval(f"logging.{os.getenv('LOG_LEVEL')}")
 logging.basicConfig(level=_log_level,
                     format="%(asctime)s %(levelname)-8s %(message)s")
 
-@app.route("/jokes", methods=(["GET"]))
+@app.route("/jokes", methods=(["GET", "POST"]))
 def index():
     punchline = request.args.get("punchline")
 
     if not punchline:
         logging.info("New joke requested")
-        try:
-            joke = services.tell_joke()
+        try:        
+            if request.method == "POST":
+                phrase = request.form["phrase"]
+                joke = services.tell_joke_about(phrase)
+            else:
+                joke = services.tell_joke()
             return redirect(url_for("index", 
                                     setup=joke.setup, 
                                     punchline=joke.punchline, 

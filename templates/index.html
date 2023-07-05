@@ -28,5 +28,10 @@
   <form action="/jokes" method="get">
     <input type="submit" value="Generate a joke" />
   </form>
-  {% endif %}  
+  {% endif %}
+  <h2>OR</h2>
+  <form action="/jokes" method="post">
+    <input type="submit" value="Joke about ... " />
+    <input type="text" name="phrase" placeholder="joke topic" required />
+  </form>  
 </body>
