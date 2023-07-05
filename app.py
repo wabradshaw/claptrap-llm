@@ -20,8 +20,8 @@ def index():
         logging.info("New joke requested")
         try:        
             if request.method == "POST":
-                phrase = request.form["phrase"]
-                joke = services.tell_joke_about(phrase)
+                topic = request.form["topic"]
+                joke = services.tell_joke_about(topic)
             else:
                 joke = services.tell_joke()
             return redirect(url_for("index", 

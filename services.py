@@ -37,13 +37,14 @@ class Services:
         return words
 
     def tell_joke(self):
+        logging.info("Generating a joke from scratch")
         options = random.choices(population=self._long_words,k=10)
 
         logging.debug(f"Possible joke words: {options}")
 
         for candidate in options:            
             try:
-                return self.tell_joke_about(candidate)
+                return self._tell_joke_about_phrase(candidate)
             except (ModelResponseFormatError, NoJokeFoundError):
                 # We'll try again so long as there's another possible option. 
                 # Other exceptions are raised as normal.
@@ -51,9 +52,38 @@ class Services:
                 pass
 
         raise NoJokeFoundError()
-                
-    def tell_joke_about(self, phrase):
-        logging.info(f"Trying to create a joke about [{phrase}]")
+
+    def tell_joke_about(self, topic):
+        logging.info(f"Generating a joke about {topic}")
+
+        #TODO - Validate input topic is not problematic
+        topic = topic.lower()
+        if len(topic) <= 5:
+            return self._tell_joke_about_replacement(topic)
+        elif len(topic) >= 8:
+            return self._tell_joke_about_phrase(topic)
+        else:
+            options = ["phrase","replacement"]
+            random.shuffle(options)
+            for option in options:
+                try:                                
+                    if option == "phrase":
+                        return self._tell_joke_about_phrase(topic)
+                    else:
+                        return self._tell_joke_about_replacement(topic)
+                except (ModelResponseFormatError, NoJokeFoundError):
+                    logging.info(f"Could not think of a joke for {topic} as a {option}")
+                    pass
+
+        raise NoJokeFoundError()
+    
+    def _tell_joke_about_replacement(self, replacement):
+        logging.info(f"Trying to create a joke replacing [{replacement}]")
+
+        raise NoJokeFoundError()
+    
+    def _tell_joke_about_phrase(self, phrase):
+        logging.info(f"Trying to create a joke about the phrase [{phrase}]")
 
         candidate_words = self._get_constituent_words(phrase)
 
