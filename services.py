@@ -58,22 +58,32 @@ class Services:
 
         #TODO - Validate input topic is not problematic
         topic = topic.lower()
-        if len(topic) <= 5:
-            return self._tell_joke_about_replacement(topic)
-        elif len(topic) >= 8:
-            return self._tell_joke_about_phrase(topic)
-        else:
-            options = ["phrase","replacement"]
-            random.shuffle(options)
-            for option in options:
-                try:                                
-                    if option == "phrase":
+
+        options = []
+
+        if len(topic) <= 7:
+            options.append("replacement")
+        
+        if len(topic) >= 6:
+            options.append("phrase")
+
+        random.shuffle(options)
+        options.append("topic")
+
+        for option in options:
+            try:                                
+                match option:
+                    case "phrase":
                         return self._tell_joke_about_phrase(topic)
-                    else:
+                    case "replacement":
                         return self._tell_joke_about_replacement(topic)
-                except (ModelResponseFormatError, NoJokeFoundError):
-                    logging.info(f"Could not think of a joke for {topic} as a {option}")
-                    pass
+                    case "topic":
+                        #TODO - Topic based jokes
+                        raise NoJokeFoundError
+                    
+            except (ModelResponseFormatError, NoJokeFoundError):
+                logging.info(f"Could not think of a joke for {topic} as a {option}")
+                pass
 
         raise NoJokeFoundError()
     
