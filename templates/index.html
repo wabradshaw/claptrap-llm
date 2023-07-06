@@ -16,9 +16,10 @@
   <form action="/jokes" method="get">
     <input type="submit" value="Generate another" />
   </form>
-  <div class="origin">{{ origin }}</div>
+  <div class="nucleus">{{ nucleus }}</div>
   <div class="component">{{ component }}</div>
-  <div class="replacement">{{ replacement }}</div>
+  <div class="change">{{ change }}</div>
+  <div class="substitution">{{ substitution }}</div>
   {% elif error %}
   <div class="error">{{ error }}</div>
   <form action="/jokes" method="get">    

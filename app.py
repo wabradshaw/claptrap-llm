@@ -27,9 +27,10 @@ def index():
             return redirect(url_for("index", 
                                     setup=joke.setup, 
                                     punchline=joke.punchline, 
-                                    origin=joke.origin, 
-                                    component=joke.component, 
-                                    replacement=joke.replacement))        
+                                    nucleus=joke.nucleus, 
+                                    component=joke.component,
+                                    change=joke.change, 
+                                    substitution=joke.substitution))
         except PermanentOpenAIError as e:
             return render_template("index.html", 
                                    error="I'm sorry, we can't generate jokes at the moment.") 
@@ -48,6 +49,7 @@ def index():
         return render_template("index.html", 
                                setup=request.args.get("setup"), 
                                punchline=punchline, 
-                               origin=request.args.get("origin"), 
+                               nucleus=request.args.get("nucleus"),                                
                                component=request.args.get("component"), 
-                               replacement=request.args.get("replacement"))
+                               change=request.args.get("change"),
+                               substitution=request.args.get("substitution"))

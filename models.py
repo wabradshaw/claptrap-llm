@@ -73,7 +73,7 @@ Examples:
         else:
             raise ModelResponseFormatError("SoundsLike", content)
         
-    def get_words_that_sound_like_component(self, word, origin):
+    def get_words_that_sound_like_component(self, component, context):
         _prompt = """
 You are a poet's assistant. You generate options for words that either rhyme with or sound like other words.
 Users will supply a candidate word, and a larger word or phrase containing that word. 
@@ -87,7 +87,7 @@ Examples:
 
         content = self._completion(
             system=_prompt,
-            user=f"'{word}' from '{origin}'"
+            user=f"'{component}' from '{context}'"
         )
         matches = _SOUND_ALIKE_PATTERN.findall(content)
 
@@ -96,31 +96,31 @@ Examples:
         else:
             raise ModelResponseFormatError("SoundsLikeComponent", content)
 
-    def joke(self, punchline, origin, replacement):
+    def joke(self, punchline, original, change):
         _prompt = """
 You are a joke generation bot used to create simple puns. You tell jokes that ask what happens when you combine two things, and respond with a punchline that combines them as a punchline word. 
 
 Users will supply three things:
 P: The punchline word
 O: The word it is based on
-R: The part that was substituted in
+C: The part that was substituted in
 
 Write a joke with a setup and a punchline.
 
-The setup should reference O and S. The punchline should contain P.
+The setup should reference O and C. The punchline should contain P.
 
 E.g.
-P: fight-mare, O: nightmare, R: fight ->
+P: fight-mare, O: nightmare, C: fight ->
 SETUP:What do you call a cross between a bad dream and a battle?
 PUNCHLINE:A fightmare!
 
-P: pup-cake, O: cupcake, R: pup ->
+P: pup-cake, O: cupcake, C: pup ->
 SETUP:What dog is made in a bakery?
 PUNCHLINE:A pup-cake!"""        
 
         content = self._completion(
             system=_prompt,
-            user=f"P:'{punchline}', O:'{origin}', R:'{replacement}'"
+            user=f"P:'{punchline}', O:'{original}', C:'{change}'"
         )
         setup_matches = _SETUP_PATTERN.findall(content)
         punchline_matches = _PUNCHLINE_PATTERN.findall(content)
