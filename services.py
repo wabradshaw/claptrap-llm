@@ -72,6 +72,7 @@ class Services:
         chosen as the component (cake could also have been used). The word pup
         is then picked as the change, which becomes the substitution pup-cake.  
         """
+        
         logging.info("Generating a joke from scratch")
         options = self._dictionary.get_random_phrases(10)
 
@@ -114,7 +115,7 @@ class Services:
                     case "change":
                         return self._tell_joke_about_change(topic)
                     case "component":
-                        #TODO - Component based jokes
+                        return self._tell_joke_about_component(topic)
                         raise NoJokeFoundError
                     case "topic":
                         #TODO - Topic based jokes
@@ -157,6 +158,40 @@ class Services:
                                                change=change,
                                                substitution=substitution)
         raise NoJokeFoundError()
+    
+    def _tell_joke_about_component(self, component):
+        logging.info(f"Trying to create a joke for component [{component}]")
+
+        candidate_nucleii = self._dictionary.some_phrases_starting_with(component)
+
+        if not candidate_nucleii:
+            logging.debug(f"No nucleii found starting with [{component}]")
+            raise NoJokeFoundError()        
+        else:  
+            logging.debug(f"Possible nucleii for [{component}]: [{candidate_nucleii}]")
+            random.shuffle(candidate_nucleii)
+            nucleus = candidate_nucleii[0]
+            logging.debug(f"Trying to joke about the [{component}] in [{nucleus}]")
+
+            candidate_changes = self._models.get_words_that_sound_like(word=component)
+
+            if not candidate_changes:
+                logging.info(f"The component [{component}] does not sound like anything")
+                raise NoJokeFoundError()
+            else:
+                logging.debug(f"Possible changes for [{component}]: [{candidate_changes}]")
+                random.shuffle(candidate_changes)
+                change = candidate_changes[0]
+                logging.debug(f"Trying to create a joke where [{component}] becomes [{change}]")
+
+                substitution = self._get_substitution(nucleus=nucleus, 
+                                                      component=component, 
+                                                      change=change)
+                
+                return self._put_joke_together(nucleus=nucleus, 
+                                               component=component,
+                                               change=change,
+                                               substitution=substitution)
     
     def _tell_joke_about_nucleus(self, nucleus):
         """
