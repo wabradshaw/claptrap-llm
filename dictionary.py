@@ -1,19 +1,14 @@
 import random
 
+import config as config
+
 class Dictionary:
     def __init__(self):
-        self._words = set(self._load_words('res/short'))
-        self._phrases = self._load_words('res/long')
+        #TODO - Move res paths to config
+        self._words = set(config.load_words('res/short'))
+        self._phrases = config.load_words('res/long')
         self._phrase_count = len(self._phrases)
 
-    def _load_words(self, path):
-        with open(path, 'r') as file:
-            file_content = file.read()
-
-        words = file_content.split('\n')
-        words = [word.strip() for word in words]
-        return words
-    
     def get_random_phrases(self, count=10):
         return random.choices(population=self._phrases, k=count)
     

@@ -2,9 +2,13 @@ import logging
 import math
 import random
 
+import config as config
 from dictionary import Dictionary
 from models import Models
-from errors import ModelResponseFormatError, NoJokeFoundError
+from errors import * 
+
+#TODO - Move to a general settings config and update the message that goes to the user.
+MAX_TOPIC_LENGTH = 16
 
 class Joke:
     """
@@ -48,6 +52,8 @@ class Services:
     _COMMON_PREFIXES = ["un"]
     _COMMON_SUFFIXES = ["acy","al","dom","er","or","ism","ist","ity","ment",
                         "ing","s","es","ed","or"]
+    
+    _BLOCKLIST = config.load_words('res/blocklist')
 
     def __init__(self):
         self._models = Models()
@@ -92,8 +98,9 @@ class Services:
     def tell_joke_about(self, topic):
         logging.info(f"Generating a joke about {topic}")
 
-        #TODO - Validate input topic is not problematic
         topic = topic.lower()
+
+        self._verify_appropriate_topic(topic)
 
         joke_types = []
 
@@ -306,3 +313,20 @@ class Services:
                             if self._dictionary.word_exists(word)]
         
         return candidate_words
+    
+    def _verify_appropriate_topic(self, topic):
+        """
+        Makes sure that an input topic is of a reasonable size, and isn't about
+        anything that we can't joke about. Raises an exception if there's an 
+        issue.
+        """
+        if not topic or len(topic.strip()) == 0:
+            raise MissingTopicError
+        
+        if len(topic) > MAX_TOPIC_LENGTH:
+            raise LongTopicError(topic)
+                
+        if topic in self._BLOCKLIST or topic[:-1] in self._BLOCKLIST:
+            raise InappropriateTopicError(topic)
+        
+        # TODO - Moderation API

@@ -4,7 +4,7 @@ import logging
 from flask import Flask, redirect, render_template, request, url_for
 
 from services import Services
-from errors import PermanentOpenAIError, RetriableOpenAIError, NoJokeFoundError
+from errors import *
 
 app = Flask(__name__)
 services = Services()
@@ -39,7 +39,16 @@ def index():
                                    error="I'm sorry, we couldn't generate a joke. Please try again.") 
         except NoJokeFoundError as e:
             return render_template("index.html", 
-                                   error="I'm sorry, we couldn't think of a joke. Let's try again.") 
+                                   error="I'm sorry, we couldn't think of a joke. Let's try again.")
+        except MissingTopicError as e:
+            return render_template("index.html",
+                                   error="Please enter a topic.")
+        except LongTopicError as e:
+            return render_template("index.html",
+                                   error="We can only support topics up to 16 chars long.") 
+        except InappropriateTopicError as e:
+            return render_template("index.html",
+                                   error="No.")
         except Exception as e:
             logging.CRITICAL("UNHANDLED ERROR!")
             return render_template("index.html", error="ERROR") 

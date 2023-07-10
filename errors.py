@@ -20,3 +20,28 @@ class RetriableOpenAIError(Exception):
 
 class PermanentOpenAIError(Exception):
     """Error raised when OpenAI is unable to generate a response. No further requests will help."""
+
+class MissingTopicError(Exception):
+    """Error raised when a user's topic request was missing."""
+
+class LongTopicError(Exception):
+    """Error raised when a user's topic request is too long.
+    
+    Attributes:
+        topic -- The topic the user requested.
+    """
+
+    def __init__(self, topic):
+        self.topic = topic
+        super().__init__(f"""A topic joke was requested, but the topic was too long: {topic}""")
+
+class InappropriateTopicError(Exception):
+    """Error raised when a user's topic request is about something we aren't going to joke about.
+    
+    Attributes:
+        topic -- The topic the user requested.
+    """
+
+    def __init__(self, topic):
+        self.topic = topic
+        super().__init__(f"""A topic joke was requested, but the topic is viewed as problematic: {topic}""")
