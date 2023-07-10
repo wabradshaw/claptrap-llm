@@ -4,7 +4,7 @@ import logging
 
 import openai
 
-from errors import ModelResponseFormatError, RetriableOpenAIError, PermanentOpenAIError
+from errors import *
 
 # ChatCompletions
 _GPT_3_5 = "gpt-3.5-turbo" 
@@ -53,6 +53,10 @@ class Models:
             logging.error("Open AI could not handle the request")
             raise RetriableOpenAIError(e)
     
+    def is_invalid_input(self, topic):
+        response = openai.Moderation.create(input = f"Tell a joke about {topic}")
+        return response["results"][0].flagged
+
     def get_words_that_sound_like(self, word):
         _prompt = """
 You are a poet's assistant. You generate options for words that either rhyme with or sound like other words.

@@ -321,12 +321,18 @@ class Services:
         issue.
         """
         if not topic or len(topic.strip()) == 0:
+            logging.error(f"User requested an empty topic, possible client issue")
             raise MissingTopicError
         
         if len(topic) > MAX_TOPIC_LENGTH:
+            logging.error(f"User requested {topic} which is too long, possible client issue")
             raise LongTopicError(topic)
                 
         if topic in self._BLOCKLIST or topic[:-1] in self._BLOCKLIST:
+            logging.debug(f"User requested {topic} which is on the blocklist")
             raise InappropriateTopicError(topic)
         
-        # TODO - Moderation API
+        if self._models.is_invalid_input(topic):
+            logging.error(f"User requested {topic}, add it to the blocklist")
+            raise InappropriateTopicError(topic)
+        
