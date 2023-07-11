@@ -76,7 +76,7 @@ Examples:
             return matches[0].split(", ")
         else:
             raise ModelResponseFormatError("SoundsLike", content)
-        
+
     def get_words_that_sound_like_component(self, component, context):
         _prompt = """
 You are a poet's assistant. You generate options for words that either rhyme with or sound like other words.
@@ -100,6 +100,28 @@ Examples:
         else:
             raise ModelResponseFormatError("SoundsLikeComponent", content)
 
+    def get_words_with_similar_meanings(self, word):
+        _prompt = """
+You are a poet's assistant. You generate words we could write jokes about. 
+Users will supply a topic, and you need to supply a list of related words.
+Include a mix of short words and long words.
+Return a comma separated list of words. Do not say anything other than the list.
+
+Examples: 
+'wave' -> [ocean, surf, tide, beach, shore, water, undertow, crest, seashell]
+'head' -> [mind, brain, thought, intellect, cognition, skull, face, forehead]"""        
+
+        content = self._completion(
+            system=_prompt,
+            user=f"'{word}'"
+        )
+        matches = _SOUND_ALIKE_PATTERN.findall(content)
+
+        if len(matches) == 1:
+            return matches[0].split(", ")
+        else:
+            raise ModelResponseFormatError("SoundsLike", content)
+            
     def joke(self, punchline, original, change):
         _prompt = """
 You are a joke generation bot used to create simple puns. You tell jokes that ask what happens when you combine two things, and respond with a punchline that combines them as a punchline word. 

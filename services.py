@@ -62,21 +62,29 @@ class Services:
     def tell_joke(self):
         """
         Attempts to tell a brand new joke about anything.
-
-        The idea here is to find a random phrase to use as the nucleus for a joke.
-        The nucleus must start or end with another word (called the component).
-        A new word that sounds like that component will be chosen (the change).
-        This change will be substituted into the nucleus to make the 
-        substitution, which will become the punchline. AI is then used to 
-        produce the setup and punchline for a joke that uses these parts.
+        
+        The general idea behind joke generation is that we are looking to 
+        produce a punchline and corresponding setup. The punchline includes
+        one word or phrase that has been altered known as the SUBSTITUTION. This
+        is the part that is theoretically funny. The SUBSTITUTION started as a 
+        normal word or phrase called the NUCLEUS. The NUCLEUS needs to be long 
+        enough to either start or end with a different word called the 
+        COMPONENT. The system finds a different word called the CHANGE that 
+        sounds a bit like the COMPONENT. The COMPONENT part of the NUCLEUS is 
+        replaced by the CHANGE to make the SUBSTITUTION. 
 
         For example:
-        What type of dog is made in a bakery?
-        A pup-cake!
+        What classification system is made entirely out of yoga equipment?
+        A mat-egory!
 
-        In this example, cupcake is the nucleus that starts the joke. Cup is 
-        chosen as the component (cake could also have been used). The word pup
-        is then picked as the change, which becomes the substitution pup-cake.  
+        In this case the word 'category' is chosen as the NUCLEUS.
+        Since 'category' starts with 'cat', that becomes the COMPONENT.
+        The word 'mat' sounds like 'cat' and is used as the CHANGE.
+        It is substituted into 'category' to get 'mat-egory', the SUBSTITUTION.
+
+        This method will try random long words as the nucleus.
+
+        Returns a Joke object.
         """
         
         logging.info("Generating a joke from scratch")
@@ -95,7 +103,54 @@ class Services:
 
         raise NoJokeFoundError()
 
-    def tell_joke_about(self, topic):
+    def tell_joke_about(self, topic, related=False):
+        """
+        Attempts to tell a joke about a particular topic. This links to the 
+        main joke generation entry point. Has several different joke generation
+        strategies that will be attempted.
+
+        The general idea behind joke generation is that we are looking to 
+        produce a punchline and corresponding setup. The punchline includes
+        one word or phrase that has been altered known as the SUBSTITUTION. This
+        is the part that is theoretically funny. The SUBSTITUTION started as a 
+        normal word or phrase called the NUCLEUS. The NUCLEUS needs to be long 
+        enough to either start or end with a different word called the 
+        COMPONENT. The system finds a different word called the CHANGE that 
+        sounds a bit like the COMPONENT. The COMPONENT part of the NUCLEUS is 
+        replaced by the CHANGE to make the SUBSTITUTION. 
+
+        For example:
+        What classification system is made entirely out of yoga equipment?
+        A mat-egory!
+
+        In this case the word 'category' is chosen as the NUCLEUS.
+        Since 'category' starts with 'cat', that becomes the COMPONENT.
+        The word 'mat' sounds like 'cat' and is used as the CHANGE.
+        It is substituted into 'category' to get 'mat-egory', the SUBSTITUTION.
+
+        This method will try to use the input word as part of the joke. It could
+        be used as the NUCLEUS (if it's long enough), and the COMPONENT or 
+        CHANGE (if it's short enough). They are tried in a random order to get 
+        more variation.
+
+        If a joke can't be found, then we will look for a different word that 
+        relates to the input topic and use that. If we are using a related word
+        we avoid using it as a COMPONENT because that can cause jokes to look
+        very different to the input topic. We also won't recursively look for
+        related words.
+
+        Note that this will avoid telling jokes about certain topics such as
+        racist slurs. 
+
+        Returns a Joke object.
+
+        Arguments:
+        topic   -- The word to joke about.
+        related -- Defaults to false. If the word is already tangentially 
+                   related to a user's request. If so, we won't try and look for
+                   related words if no other joke can be found. We'll also avoid
+                   telling jokes where the topic is used as the COMPONENT. 
+        """
         logging.info(f"Generating a joke about {topic}")
 
         topic = topic.lower()
@@ -106,13 +161,17 @@ class Services:
 
         if len(topic) <= 7:
             joke_types.append("change")
-            joke_types.append("component")
+
+            if not related:
+                joke_types.append("component")
         
         if len(topic) >= 6:
             joke_types.append("phrase")
 
         random.shuffle(joke_types)
-        joke_types.append("topic")
+
+        if not related:
+            joke_types.append("topic")
 
         for joke_type in joke_types:
             try:                                
@@ -123,10 +182,8 @@ class Services:
                         return self._tell_joke_about_change(topic)
                     case "component":
                         return self._tell_joke_about_component(topic)
-                        raise NoJokeFoundError
                     case "topic":
-                        #TODO - Topic based jokes
-                        raise NoJokeFoundError
+                        return self._tell_joke_about_topic(topic)                        
                     
             except (ModelResponseFormatError, NoJokeFoundError):
                 logging.info(f"Could not think of a joke for {topic} as a {joke_type}")
@@ -167,6 +224,10 @@ class Services:
         raise NoJokeFoundError()
     
     def _tell_joke_about_component(self, component):
+        """
+        Try to tell a joke where the input component is part of the punchline,
+        but it gets replaced by something else. 
+        """
         logging.info(f"Trying to create a joke for component [{component}]")
 
         candidate_nucleii = self._dictionary.some_phrases_starting_with(component)
@@ -243,6 +304,34 @@ class Services:
         logging.info(f"No substitutions found for any components of [{nucleus}]")
         raise NoJokeFoundError()
 
+    def _tell_joke_about_topic(self, topic):
+        """
+        Try to tell a joke by backing off from a topic and attempting a joke on
+        other related words. Importantly, this shouldn't recurse again.        
+        """
+
+        logging.info(f"Trying to backoff from [{topic}] to find a joke")
+
+        candidate_topics = self._models.get_words_with_similar_meanings(topic)        
+
+        if not candidate_topics:
+            logging.debug(f"No related topics found for [{topic}]")
+            raise NoJokeFoundError()
+        logging.debug(f"Possible topics for [{topic}]: [{candidate_topics}]")
+
+        random.shuffle(candidate_topics)        
+
+        for candidate_topic in candidate_topics:
+            try:            
+                joke = self.tell_joke_about(topic=candidate_topics[0],
+                                            related=True)
+                return joke
+            except (ModelResponseFormatError, NoJokeFoundError):
+                logging.info(f"Could not think of a backoff joke for {candidate_topic}")
+                pass
+
+        return NoJokeFoundError()
+    
     def _put_joke_together(self, nucleus, component, change, substitution):
         """Requests a setup and punchline for the given joke and wraps it as a Joke object"""
 
